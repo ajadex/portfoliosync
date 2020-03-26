@@ -1,10 +1,3 @@
-# uncompyle6 version 3.6.4
-# Python bytecode 3.6 (3379)
-# Decompiled from: Python 3.6.9 (default, Nov  7 2019, 10:44:02) 
-# [GCC 8.3.0]
-# Embedded file name: /mnt/d/Projects/MyProjects/portfoliosync/tastyworks_api/google/sheets.py
-# Compiled at: 2020-03-20 21:01:48
-# Size of source mod 2**32: 2570 bytes
 from __future__ import print_function
 import pickle, os.path
 from googleapiclient.discovery import build
@@ -40,11 +33,9 @@ def get_service():
 
 def update(spreadsheet_id, range, values):
     service = get_service()
-    sheet = {'properties': {'title': 'test'}}
+    #sheet = {'properties': {'title': 'test'}}
     body = {'values': values}
     result = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id,
       range=range,
       valueInputOption='USER_ENTERED',
       body=body).execute()
-    return sheet.get('spreadsheetId')
-# okay decompiling sheets.cpython-36.pyc
