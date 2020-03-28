@@ -1,57 +1,44 @@
-import asyncio
-import aiohttp
-import requests
+import robinhood.authentication_service as authentication_service
+import robinhood.robinhood_client as robinhood_client
+from finviz import finviz_service
+import datetime as datetime
 
-async def accounts(token):
-    request_url = 'https://api.robinhood.com/accounts/'
+class RobinHoodService:
 
-    async with aiohttp.request('GET', request_url, headers={ 'Authorization': "Bearer {}".format(token) }) as resp:
-        if resp.status != 200:
-            print('Warning: Searching for accounts failed.')
-            return 0
+    def __init__(self, rh_username, rh_password): 
+        self.token = authentication_service.authenticate(rh_username, rh_password)
+
+    async def equity(self):
+        if self.token is None:
+            return {}
+
+        accounts = await robinhood_client.accounts(self.token)
+        equity = await robinhood_client.positions(self.token, accounts[0])
+        values = {}
         
-        data = await resp.json()
-    
-    return data['results']
-
-async def positions(token, account):
-    request_url = 'https://api.robinhood.com/positions/?nonzero=true'
-
-    async with aiohttp.request('GET', request_url, headers={ 'Authorization': "Bearer {}".format(token) }) as resp:
-        if resp.status != 200:
-            print('Warning: Searching for positions failed.')
-            return 0
-        
-        data = await resp.json()
-        equity = data['results']
-        instrument_ids = []
         for stock in equity:
-            instrument_ids.append(stock['instrument'].replace('https://api.robinhood.com/instruments/', '').replace('/', ''))
-        
-        instrument_details = await instruments(token, instrument_ids)
-        for i, instrument in enumerate(instrument_details):
-            equity[i]['symbol'] = instrument['symbol']
-    
-    return equity
+            dividend = await finviz_service.dividend(stock['symbol'])
+            values[stock["symbol"]] = { 'symbol': stock["symbol"], 
+                                        'quantity': float(stock["quantity"]), 
+                                        'price': float(stock["average_buy_price"]), 
+                                        'dividend': dividend}
+        return values
 
+    async def transfers(self, current_year):
+        if self.token is None:
+            return {}
 
-async def instruments(token, instrument_ids):
-    request_url = 'https://api.robinhood.com/instruments/?ids={}'.format('%2C'.join(instrument_ids))
+        transfers = await robinhood_client.transfers(self.token)
+        values = {}
 
-    async with aiohttp.request('GET', request_url, headers={ 'Authorization': "Bearer {}".format(token) }) as resp:
-        if resp.status != 200:
-            print('Warning: Searching for intruments failed.')
-            return 0
-        
-        data = await resp.json()
-    
-    return data['results']
+        for transfer in transfers:
+            transfer_date = datetime.datetime.strptime(transfer['expected_landing_date'], '%Y-%m-%d').date()
+            if (transfer['state'] != 'completed' or transfer_date.year != current_year):
+                continue
 
-# from os import environ
-# import authentication_service as authentication_service
-# loop = asyncio.new_event_loop()
-# asyncio.set_event_loop(loop)
-# token = authentication_service.authenticate(environ.get('RH_USER', ""), environ.get('RH_PASSWORD', ""))
-# accounts = loop.run_until_complete(accounts(token))
-# positions = loop.run_until_complete(positions(token, accounts[0]))
-# print(positions)
+            if (transfer_date.month not in values):
+                values[transfer_date.month] = 0.0
+            values[transfer_date.month] = values[transfer_date.month] + float(transfer['amount'])
+            
+        return values
+                

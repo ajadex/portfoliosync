@@ -159,6 +159,23 @@ class TradingAccount(object):
             data = (await response.json())['data']
         return data
 
+    async def get_transfers(session, account, start_date, end_date):
+        """
+        Get live Orders.
+
+        Args:
+            session (TastyAPISession): An active and logged-in session object against which to query.
+            account (TradingAccount): The account_id to get history on.
+        Returns:
+            dict: account attributes
+        """
+        url = '{}/accounts/{}/transactions?type=Money+Movement&start-date={}&end-date={}&per-page=1000'.format(session.API_url, account.account_number, start_date, end_date)
+        async with aiohttp.request('GET', url, headers=(session.get_request_headers())) as response:
+            if response.status != 200:
+                raise Exception('Could not get history info from Tastyworks...')
+            data = (await response.json())['data']['items']
+        return data
+
 
 def _get_execute_order_json(order: Order):
     order_json = {'source':order.details.source, 

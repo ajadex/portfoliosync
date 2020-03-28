@@ -6,8 +6,6 @@ from google.auth.transport.requests import Request
 from dataclasses import dataclass
 SCOPES = [
  'https://www.googleapis.com/auth/spreadsheets']
-SAMPLE_SPREADSHEET_ID = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'
-SAMPLE_RANGE_NAME = 'Class Data!A2:E'
 
 def get_service():
     """Shows basic usage of the Sheets API.
