@@ -40,7 +40,8 @@ class TastyworksService:
             values[stock["symbol"]] = { 'symbol': stock["symbol"], 
                                         'quantity': float(stock["quantity"]), 
                                         'price': float(stock["average-open-price"]), 
-                                        'dividend': dividend}
+                                        'dividend': dividend,
+                                        'dividend_payout': 0.0}
         return values
 
     async def transfers(self, current_year):
